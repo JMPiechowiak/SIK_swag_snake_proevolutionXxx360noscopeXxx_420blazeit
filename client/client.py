@@ -1,58 +1,3 @@
-# display_width = 800
-# display_height = 800
-#
-# #network settings
-# s = socket.socket()
-# host = socket.gethostname() # Get local machine name
-# port = 12345
-#
-# s.connect((host, port))
-#
-# #get width and height of the grid from server
-# data = s.recv(1024).rstrip('\x00').split();
-#
-# segment_width = display_width/int(data[0])
-# segment_height = display_height/int(data[1])
-# s.send("1")
-#
-# data = s.recv(1024).rstrip('\x00').split();
-# start_x = int(data[0]);
-# start_y = int(data[1]);
-#
-#
-# s.send("1")
-# s.close
-#
-#
-#
-#
-#
-#
-# pygame.init()
-#
-# gameDisplay = pygame.display.set_mode([display_width,display_height])
-# pygame.display.set_caption("Snake!")
-#
-# all_sprites = pygame.sprite.Group()
-#
-# snake_segments = []
-#
-# segment = Segment(start_x, start_y)
-# snake_segments.append(segment)
-# all_sprites.add(segment)
-#
-# clock = pygame.time.Clock()
-#
-# runing = True;
-#
-# while runing:
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             runing = False
-#
-
-#     clock.tick(5)
-# pygame.quit()
 import pygame
 import socket
 import sys
@@ -129,6 +74,25 @@ class Control(object):
     def display_fps(self):
         caption = "{} - FPS: {:.2f}".format(CAPTION, self.clock.get_fps())
         pygame.display.set_caption(caption)
+		
+	def get_config(filename):
+		file = open(filename)
+		try:
+			string = file.read()
+		finally:
+			file.close()
+
+		list = string.split('\n')
+		data = [x for x in list if "#" not in x]
+		while '' in data:
+			data.remove('')
+		
+		for i in range(0, len(data)):
+			try:
+				data[i] = int(data[i])
+			except ValueError:
+				continue
+		return data
 
 
     def main_loop(self):
@@ -148,16 +112,17 @@ def get_response(socket):
 
 def main():
     pygame.init()
+	config_options = get_config('cfg.txt')
     #network settings
     s = socket.socket()
-    host = socket.gethostname() # Get local machine name
-    port = 12345
+    host = config_options[0] # Get local machine name
+    port = config_options[1]
     print "Try to connect " + host
     s.connect((host, port))
 
     data = get_response(s)
     #screen options
-    gameDisplay = pygame.display.set_mode([800,800])
+    gameDisplay = pygame.display.set_mode([config_options[2],config_options[3]])
     pygame.display.set_caption("Snake!")
     #initialize and start game
     Control(s, data).main_loop()
