@@ -1,0 +1,11 @@
+#HOST NAME
+localhost
+
+#PORT
+12345
+
+#RESOLUTION
+#x
+800
+#y
+800
