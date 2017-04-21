@@ -63,7 +63,7 @@ void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple
       strcat(packet, to_str(a.x));
       strcat(packet, " ");
       strcat(packet, to_str(a.y));
-      need_response = 1;
+
       break;
     case 2:
       strcpy(packet, to_str(2));
@@ -72,13 +72,13 @@ void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple
     case 3:
       strcpy(packet, to_str(3));
       strcat(packet, " ");
-      strcat(packet, to_str(0));
+      strcat(packet, to_str(player_rec.ate_apple));
       strcat(packet, " ");
       strcat(packet, to_str(player_rec.head->x));
       strcat(packet, " ");
       strcat(packet, to_str(player_rec.head->y));
       strcat(packet, " ");
-      strcat(packet, to_str(0));
+      strcat(packet, to_str(player_2.ate_apple));
       strcat(packet, " ");
       strcat(packet, to_str(player_2.head->x));
       strcat(packet, " ");
@@ -106,30 +106,41 @@ void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple
   free(packet);
 }
 
+void get_response(int socket, Snake *s)
+{
+  char bufor;
+  #ifndef DEBUG
+    recv(socket, &bufor, sizeof(char), 0);
+    s->direction = bufor;
+  #else
+  bufor = s->direction;
+  #endif
+
+  //printf("direction: %s\n", &bufor);
+}
+
 void Game(int socket1, int socket2)
 {
-  Snake *player_1 = snake_init(0, GRID_HEIGHT/2);
-  Snake *player_2 = snake_init(GRID_WIDTH - 1, GRID_HEIGHT/2);
+  Snake *player_1 = snake_init(3, GRID_HEIGHT/2, 3);
+  Snake *player_2 = snake_init(GRID_WIDTH - 1, GRID_HEIGHT/2, 3);
   Apple apple = apple_init(GRID_WIDTH/2, GRID_HEIGHT/2);
   send_first_packet(socket1,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_1);
   send_packet(socket1, 1, *player_1, *player_2, apple);
   send_packet(socket1, 2, *player_1, *player_2, apple);
-  send_packet(socket1, 3, *player_1, *player_2, apple);
-  send_packet(socket1, 4, *player_1, *player_2, apple);
-  //snake_print(*player_1);
-  //snake_print(*player_2);
-  //sleep(5);
-  // send_status(socket1, 1);
-  // //update
-  // send_packet(socket1, 2, *player_1, *player_2);
-  // snakes_update(player_1, player_2);
-
-
-
-  //sleep(5);
-  //snake_init(player_2, GRID_WIDTH-1, GRID_HEIGHT/2);
-  //send options
-  //first_packet(socket1, '1', to_str(GRID_WIDTH), to_str(GRID_HEIGHT), to_str(0) ,to_str(GRID_HEIGHT/2));
-  //get response
-  //recv(socket1, bufor, sizeof(bufor),0);
+  int n = 6;
+  printf("\n******************************\n");
+  while(n > 0)
+  {
+    n--;
+    if(n == 2 || n == 3) player_1->ate_apple = 1;
+    if(!player_1->alive) printf("PLAYER 1 LOST\n");
+    else
+    {
+    printf("player1\n");snake_print(*player_1);
+    printf("player2\n");snake_print(*player_2);
+    send_packet(socket1, 3, *player_1, *player_2, apple);
+    get_response(socket1, player_1);
+    snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+  }
+  }
 }
