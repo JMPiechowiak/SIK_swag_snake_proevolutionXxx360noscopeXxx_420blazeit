@@ -5,7 +5,7 @@ import sys
 CAPTION = "Snake!"
 
 class Control(object):
-    def __init__(self, socket, data):
+    def __init__(self, socket, data, x, y): #x, y resolution parameters
         #set needed variables
         self.screen = pygame.display.get_surface()
         self.done = False
@@ -13,8 +13,8 @@ class Control(object):
         self.keys = pygame.key.get_pressed()
         self.clock = pygame.time.Clock()
         #load from rec data
-        self.segment_width = 800/int(data[1])
-        self.segment_height = 800/int(data[2])
+        self.segment_width = x/int(data[1])
+        self.segment_height = y/int(data[2])
         self.state = data[0]#0-4
         self.direction = data[5]#0-3
         self.my_segments = [[int(data[3]),int(data[4])]]
@@ -27,13 +27,19 @@ class Control(object):
             self.keys = pygame.key.get_pressed()
             if event.type == pygame.QUIT  or self.keys[pygame.K_ESCAPE]:
                 self.done = True
+            if self.keys[pygame.K_UP] and self.direction != '1'
+                self.direction = '0'
+            if self.keys[pygame.K_DOWN] and self.direction != '0'
+                self.direction = '1'
+            if self.keys[pygame.K_RIGHT] and self.direction != '3'
+                self.direction = '2'
+            if self.keys[pygame.K_LEFT] and self.direction != '2'
+                self.direction = '3'
 
     def update(self):
-        if not status == "0":
-            data = get_response(self.socket)
-            print data
-            self.state = data[0]
-
+        data = get_response(self.socket)
+        print data
+        self.state = data[0]
         print "status: "+self.state
 
         if self.state == "0":
@@ -42,7 +48,8 @@ class Control(object):
 
         elif self.state == "1":
             print "INIT"
-            print data
+            self.apple = [int(data[3]),int(data[4])]
+            self.enemy_segments.append([int(data[1]),int(data[2])])
             #enemy and apple init
             #set state to ready
 
@@ -59,12 +66,23 @@ class Control(object):
             self.done = True;
 
     def snakes_update(self, data):
-            for i in range(2,int(data[1])*2+2,2):
-                self.segments.append([int(data[i]),int(data[i+1])])
+        self.my_segments.append([int(data[2]),int(data[3])])
+        self.enemy_segments.append([int(data[5]),int(data[6])])
+        if data[1] == '0'
+            my_segments.pop(0)
+        if data[4] == '0'
+            enemy_segments.pop(0)
+        #l.pop(0)
+
 
     def draw_segments(self, segments):
+        #draw all segments
+        segments = self.my_segments + self.enemy_segments
         for s in segments:
             pygame.draw.rect(self.screen, [1,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
+        #draw apple if it is possible
+        if self.apple:
+            pygame.draw.rect(self.screen, [255,0,2], (self.apple[0]*self.segment_width,self.apple[1]*self.segment_height,self.segment_width, self.segment_height),0)
 
     def draw(self):
         self.screen.fill([4,10,100])
@@ -74,7 +92,7 @@ class Control(object):
     def display_fps(self):
         caption = "{} - FPS: {:.2f}".format(CAPTION, self.clock.get_fps())
         pygame.display.set_caption(caption)
-		
+
 	def get_config(filename):
 		file = open(filename)
 		try:
@@ -86,7 +104,7 @@ class Control(object):
 		data = [x for x in list if "#" not in x]
 		while '' in data:
 			data.remove('')
-		
+
 		for i in range(0, len(data)):
 			try:
 				data[i] = int(data[i])
@@ -125,7 +143,7 @@ def main():
     gameDisplay = pygame.display.set_mode([config_options[2],config_options[3]])
     pygame.display.set_caption("Snake!")
     #initialize and start game
-    Control(s, data).main_loop()
+    Control(s, data, config_options[2], config_options[3]).main_loop()
     #close program
     s.close
     pygame.quit()
@@ -134,3 +152,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
