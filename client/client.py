@@ -27,39 +27,39 @@ class Control(object):
             self.keys = pygame.key.get_pressed()
             if event.type == pygame.QUIT  or self.keys[pygame.K_ESCAPE]:
                 self.done = True
-            if self.keys[pygame.K_UP] and self.direction != '1'
+            if self.keys[pygame.K_UP] and self.direction != '1':
                 self.direction = '0'
-            if self.keys[pygame.K_DOWN] and self.direction != '0'
+            if self.keys[pygame.K_DOWN] and self.direction != '0':
                 self.direction = '1'
-            if self.keys[pygame.K_RIGHT] and self.direction != '3'
+            if self.keys[pygame.K_RIGHT] and self.direction != '3':
                 self.direction = '2'
-            if self.keys[pygame.K_LEFT] and self.direction != '2'
+            if self.keys[pygame.K_LEFT] and self.direction != '2':
                 self.direction = '3'
 
     def update(self):
         data = get_response(self.socket)
-        print data
+        #print data
         self.state = data[0]
-        print "status: "+self.state
+        #print "status: "+self.state
 
         if self.state == "0":
-            print "WAITING"
-            self.socket.send("1")
+        
+            self.socket.send("0")
 
         elif self.state == "1":
-            print "INIT"
+
             self.apple = [int(data[3]),int(data[4])]
             self.enemy_segments.append([int(data[1]),int(data[2])])
-            #enemy and apple init
-            #set state to ready
+            self.socket.send("1")
 
         elif self.state == "2":
-            print "READY"
+
             self.socket.send("2")
 
         elif self.state == "3":
-            print "RUN"
-            self.state = "4"
+
+            self.snakes_update(data)
+            self.socket.send(self.direction)
 
         elif self.state == "4":
             print "END"
@@ -68,14 +68,15 @@ class Control(object):
     def snakes_update(self, data):
         self.my_segments.append([int(data[2]),int(data[3])])
         self.enemy_segments.append([int(data[5]),int(data[6])])
-        if data[1] == '0'
-            my_segments.pop(0)
-        if data[4] == '0'
-            enemy_segments.pop(0)
+        if data[1] == '0':
+            self.my_segments.pop(0)
+        if data[4] == '0':
+            self.enemy_segments.pop(0)
+        self.apple = [int(data[7]),int(data[8])]
         #l.pop(0)
 
 
-    def draw_segments(self, segments):
+    def draw_segments(self):
         #draw all segments
         segments = self.my_segments + self.enemy_segments
         for s in segments:
@@ -86,32 +87,12 @@ class Control(object):
 
     def draw(self):
         self.screen.fill([4,10,100])
-        self.draw_segments(self.segments)
+        self.draw_segments()
         pygame.display.flip()
 
     def display_fps(self):
         caption = "{} - FPS: {:.2f}".format(CAPTION, self.clock.get_fps())
         pygame.display.set_caption(caption)
-
-	def get_config(filename):
-		file = open(filename)
-		try:
-			string = file.read()
-		finally:
-			file.close()
-
-		list = string.split('\n')
-		data = [x for x in list if "#" not in x]
-		while '' in data:
-			data.remove('')
-
-		for i in range(0, len(data)):
-			try:
-				data[i] = int(data[i])
-			except ValueError:
-				continue
-		return data
-
 
     def main_loop(self):
         while not self.done:
@@ -123,14 +104,34 @@ class Control(object):
             self.display_fps()
 
 def get_response(socket):
-    print "Get data"
+    #print "Get data"
     data = socket.recv(1024).split()
     #socket.send("1")
     return data
 
+def get_config(filename):
+    file = open(filename, 'rU')
+    try:
+		string = file.read()
+    finally:
+		file.close()
+
+    list = string.split('\n')
+    data = [x for x in list if "#" not in x]
+    while '' in data:
+		data.remove('')
+
+    for i in range(0, len(data)):
+		try:
+			data[i] = int(data[i])
+		except ValueError:
+		    continue
+    print data
+    return data
+
 def main():
     pygame.init()
-	config_options = get_config('cfg.txt')
+    config_options = get_config('cfg.txt')
     #network settings
     s = socket.socket()
     host = config_options[0] # Get local machine name
@@ -139,6 +140,8 @@ def main():
     s.connect((host, port))
 
     data = get_response(s)
+    print data
+    s.send("0")
     #screen options
     gameDisplay = pygame.display.set_mode([config_options[2],config_options[3]])
     pygame.display.set_caption("Snake!")
@@ -152,4 +155,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -14,6 +14,7 @@ Snake* snake_init(int x, int y, int dir)
   new_snake->direction = dir;
   new_snake->ate_apple = 0;
   new_snake->alive = 1;
+  new_snake->length = 1;
   return new_snake;
 }
 
@@ -74,19 +75,21 @@ void update_segments(Snake *s)
   }
   else
   {
-    int x = s->head->x, y = s->head->y;
-    if(s->head != s->tail)//if snake have only one segment
+    if(s->head != s->tail)//s->length > 1
     {
       Segment *hold = s->tail;
-      s->tail->prev->next = NULL;
       s->tail = s->tail->prev;
+      s->tail->next = NULL;
       s->head->prev = hold;
       hold->next = s->head;
       hold->prev = NULL;
+      hold->x = s->head->x;
+      hold->y = s->head->y;
       s->head = hold;
     }
-    s->head->x = x + snake_move_x(*s);
-    s->head->y = y + snake_move_y(*s);
+    //if snake have only one segment
+    s->head->x += snake_move_x(*s);
+    s->head->y += snake_move_y(*s);
   }
 }
 
@@ -108,6 +111,7 @@ void snake_collisions(Snake *s1, Snake *s2, int width, int height, Apple *a)
   {
     a->taken = 1;
     s1->ate_apple = 1;
+    s1->length++;
   }
 }
 
@@ -132,16 +136,15 @@ void pick_new_apple(Apple *a, int width, int height, Snake s1, Snake s2)
     x = rand() % width;
     y = rand() % height;
 
-    if(!point_in_snake(x,y,s1) && !point_in_snake(x,y,s2))
-    {
+    //if(!point_in_snake(x,y,s1) && !point_in_snake(x,y,s2))
+    //{
       a->x = x;
       a->y = y;
       a->taken = 0;
-      return;
-    }
+      break;
+    //}
     counter++;
   }
-
 }
 
 void snakes_update(Snake *s1, Snake *s2, int width, int height, Apple *apple)
@@ -150,6 +153,7 @@ void snakes_update(Snake *s1, Snake *s2, int width, int height, Apple *apple)
     if snake ate already apple we need to create
     new segment, otherwise we will take segment from tail
     and add it, with new data, as a head*/
+    //printf("Before update: %d %d\n",s1->head->x, s1->head->y);
     update_segments(s1);
     update_segments(s2);
   //check collisions

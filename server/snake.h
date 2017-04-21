@@ -15,6 +15,7 @@ typedef struct Snake{
   int direction;//0-up, 1-down, 2-right, 3-left
   int ate_apple;//1 - true, 0 - false
   int alive;//1- true, 0 false
+  int length;
   //int lenght;
   Segment *head;
   Segment *tail;

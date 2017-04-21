@@ -1,4 +1,4 @@
-#HOST NAME
+#HOST
 localhost
 
 #PORT

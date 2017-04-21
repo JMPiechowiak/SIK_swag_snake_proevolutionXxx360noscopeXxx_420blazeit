@@ -1,5 +1,5 @@
 #include "snake_game.h"
-#define DEBUG TRUE
+//#define DEBUG TRUE
 int main(void) {
 
  unsigned int port;
