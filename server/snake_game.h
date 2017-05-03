@@ -18,7 +18,7 @@ char* to_str(int num);
 
 char* concat(const char *s1, const char *s2);
 
-void send_first_packet(int socket, const char *size1, const char *size2, Snake s);
+void send_first_packet(int socket, const char *size1, const char *size2, Snake my_snake, Snake enemy_snake, Apple apple);
 
 void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple a);
 

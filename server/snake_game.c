@@ -16,20 +16,37 @@ char* concat(const char *s1, const char *s2)
     return result;
 }
 
-void send_first_packet(int socket, const char *size1, const char *size2, Snake s)
+/*Packet by ID:
+1 - INIT
+2 - READY
+3 - RUN
+4 - END
+*/
+
+void send_first_packet(int socket, const char *size1, const char *size2, Snake my_snake, Snake enemy_snake, Apple apple)
 {
-  char *packet = malloc(512);//6 = 4 x empty spaces + state + \x00
-  strcpy(packet, to_str(0));
+  // [ packet_id | grid width | grid hegight | start x | start y | starct dir ..
+  //   ...| enemy x | enemy y | apple x | apple y ] */
+  char *packet = malloc(512);
+  strcpy(packet, to_str(1));
   strcat(packet, " ");
   strcat(packet, size1);
   strcat(packet, " ");
   strcat(packet, size2);
   strcat(packet, " ");
-  strcat(packet, to_str(s.head->x));
+  strcat(packet, to_str(my_snake.head->x));
   strcat(packet, " ");
-  strcat(packet, to_str(s.head->y));
+  strcat(packet, to_str(my_snake.head->y));
   strcat(packet, " ");
-  strcat(packet, to_str(s.direction));
+  strcat(packet, to_str(my_snake.direction));
+  strcat(packet, " ");
+  strcat(packet, to_str(enemy_snake.head->x));
+  strcat(packet, " ");
+  strcat(packet, to_str(enemy_snake.head->y));
+  strcat(packet, " ");
+  strcat(packet, to_str(apple.x));
+  strcat(packet, " ");
+  strcat(packet, to_str(apple.y));
   #ifndef DEBUG
   send(socket, packet, strlen(packet), 0);
   #else
@@ -37,38 +54,21 @@ void send_first_packet(int socket, const char *size1, const char *size2, Snake s
   #endif
   free(packet);
 }
-/*status:
-0 - WAIT
-1 - INIT
-2 - READY
-3 - RUN
-4 - END
-*/
+
 void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple a)
 {
   char bufor[16];
   short need_response = 0;
   char *packet = malloc(1024);
   switch(status){
-    case 0:
-      strcpy(packet, to_str(0));
-      break;
-    case 1:
-      strcpy(packet, to_str(1));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_2.head->x));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_2.head->y));
-      strcat(packet, " ");
-      strcat(packet, to_str(a.x));
-      strcat(packet, " ");
-      strcat(packet, to_str(a.y));
-      break;
     case 2:
+    // [ packet id ]
       strcpy(packet, to_str(2));
-      //need_response = 1;
       break;
     case 3:
+    // [ packet id | ate apple? | player new x | player new y ...
+    //  ... | enemy ate apple? | enemy new x | enemy new y ...
+    //  ... | apple x | apple y ]
       strcpy(packet, to_str(3));
       strcat(packet, " ");
       strcat(packet, to_str(player_rec.ate_apple));
@@ -88,17 +88,17 @@ void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple
       strcat(packet, to_str(a.y));
       break;
     case 4:
+    // [ packet id ]
       strcpy(packet, to_str(4));
       break;
     default:
-      strcpy(packet, to_str(101));
+      strcpy(packet, to_str(-1));
       printf("error: unknown status!");
       exit(-1);
   }
 
   #ifndef DEBUG
   send(socket, packet, strlen(packet), 0);
-  if(need_response == 1) recv(socket, bufor, 16, 0);
   #else
   printf("@send_packet: %s\n", packet);
   #endif
@@ -118,28 +118,35 @@ void Game(int socket1, int socket2)
 {
   char bufor;
   Snake *player_1 = snake_init(0, GRID_HEIGHT/2, 2);
-  Snake *player_2 = snake_init(GRID_WIDTH - 20, GRID_HEIGHT/2, 3);
+  Snake *player_2 = snake_init(GRID_WIDTH-1, GRID_HEIGHT/2, 3);
   Apple apple = apple_init(GRID_WIDTH/2, GRID_HEIGHT/2);
-  send_first_packet(socket1,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_1);
+
+  send_first_packet(socket1,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_1, *player_2, apple);
+  send_first_packet(socket2,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_2, *player_1, apple);
   recv(socket1, &bufor, sizeof(char), 0);
-  send_packet(socket1, 1, *player_1, *player_2, apple);
-  recv(socket1, &bufor, sizeof(char), 0);
+  recv(socket2, &bufor, sizeof(char), 0);
+
   send_packet(socket1, 2, *player_1, *player_2, apple);
   recv(socket1, &bufor, sizeof(char), 0);
-  int run = 1;
-  while(run)
-  {
-    if(!player_1->alive || !player_2->alive)
-    {
-      run = 0;
-      send_packet(socket1, 4, *player_1, *player_2, apple);
-    }
-    else
-    {
-      send_packet(socket1, 3, *player_1, *player_2, apple);
-      get_response(socket1, player_1);
-      snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
-    }
-  }
+  send_packet(socket2, 2, *player_2, *player_1, apple);
+  recv(socket2, &bufor, sizeof(char), 0);
+
+  send_packet(socket1, 4, *player_1, *player_2, apple);
+  send_packet(socket2, 4, *player_2, *player_1, apple);
+  // int run = 1;
+  // while(run)
+  // {
+  //   if(!player_1->alive || !player_2->alive)
+  //   {
+  //     run = 0;
+  //     send_packet(socket1, 4, *player_1, *player_2, apple);
+  //   }
+  //   else
+  //   {
+  //     send_packet(socket1, 3, *player_1, *player_2, apple);
+  //     get_response(socket1, player_1);
+  //     snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+  //   }
+  // }
 
 }

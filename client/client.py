@@ -6,7 +6,7 @@ CAPTION = "Snake!"
 
 class Control(object):
     def __init__(self, socket, data, x, y): #x, y resolution parameters
-        #set needed variables
+        #set variables
         self.screen = pygame.display.get_surface()
         self.done = False
         self.socket = socket
@@ -18,9 +18,8 @@ class Control(object):
         self.state = data[0]#0-4
         self.direction = data[5]#0-3
         self.my_segments = [[int(data[3]),int(data[4])]]
-        #init empty variables needed
-        self.enemy_segments = [];
-        self.apple = [];
+        self.apple = [int(data[8]),int(data[9])]
+        self.enemy_segments = [[int(data[6]),int(data[7])]]
 
     def event_loop(self):
         for event in pygame.event.get():
@@ -38,26 +37,13 @@ class Control(object):
 
     def update(self):
         data = get_response(self.socket)
-        #print data
+        print data
         self.state = data[0]
-        #print "status: "+self.state
 
-        if self.state == "0":
-        
-            self.socket.send("0")
-
-        elif self.state == "1":
-
-            self.apple = [int(data[3]),int(data[4])]
-            self.enemy_segments.append([int(data[1]),int(data[2])])
-            self.socket.send("1")
-
-        elif self.state == "2":
-
+        if self.state == "2":
             self.socket.send("2")
 
         elif self.state == "3":
-
             self.snakes_update(data)
             self.socket.send(self.direction)
 
@@ -97,16 +83,14 @@ class Control(object):
     def main_loop(self):
         while not self.done:
             self.draw()
-            self.event_loop()
-            self.update()
             pygame.display.flip()
+            self.event_loop()
             self.clock.tick(10)
-            self.display_fps()
+            self.update()
 
 def get_response(socket):
     #print "Get data"
     data = socket.recv(1024).split()
-    #socket.send("1")
     return data
 
 def get_config(filename):
@@ -141,7 +125,7 @@ def main():
 
     data = get_response(s)
     print data
-    s.send("0")
+    s.send("1")
     #screen options
     gameDisplay = pygame.display.set_mode([config_options[2],config_options[3]])
     pygame.display.set_caption("Snake!")
