@@ -28,7 +28,7 @@ int main(void) {
  printf("Czekam na polaczenie ...\n");
  games = 0;
  int pid;
- while((player1_soc = accept(main_socket,
+ if((player1_soc = accept(main_socket,
    (struct sockaddr*) &nadawca_1,
    &dl)) > 0)
  {

@@ -4,6 +4,14 @@ import sys
 
 CAPTION = "Snake!"
 
+# TO DO
+# x wysylamie statusu "READY" po kliknieciu spacji, teraz dzieje sie to automatycznie
+# x wyswietlanie komunikatow ("oczekiwanie na drugiego gracza", "wcisnij spacje by rozpoczac" ,"wygrana", "przegrana", "remis")
+# -------- to na dole juz jak sie komus bedzie chcialo :P ------------
+# x polaczenie i zbieranie pakietow w osobnym watku
+#
+#
+
 class Control(object):
     def __init__(self, socket, data, x, y): #x, y resolution parameters
         #set variables
@@ -41,14 +49,22 @@ class Control(object):
         self.state = data[0]
 
         if self.state == "2":
+            #READY?
             self.socket.send("2")
 
         elif self.state == "3":
+            #GAME IS RUNING!
             self.snakes_update(data)
             self.socket.send(self.direction)
 
         elif self.state == "4":
-            print "END"
+            #END OF THE GAME, CHECK IF YOU ARE THE WINNER!
+            if data[1] == "0":
+                print "WINNER"
+            elif data[1] == "1":
+                print "LOSER"
+            elif data[1] == "2":
+                print "DRAW"
             self.done = True;
 
     def snakes_update(self, data):
@@ -59,14 +75,14 @@ class Control(object):
         if data[4] == '0':
             self.enemy_segments.pop(0)
         self.apple = [int(data[7]),int(data[8])]
-        #l.pop(0)
-
 
     def draw_segments(self):
         #draw all segments
-        segments = self.my_segments + self.enemy_segments
-        for s in segments:
+        # segments = self.my_segments + self.enemy_segments
+        for s in self.my_segments:
             pygame.draw.rect(self.screen, [1,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
+        for s in self.enemy_segments:
+            pygame.draw.rect(self.screen, [155,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
         #draw apple if it is possible
         if self.apple:
             pygame.draw.rect(self.screen, [255,0,2], (self.apple[0]*self.segment_width,self.apple[1]*self.segment_height,self.segment_width, self.segment_height),0)
@@ -87,6 +103,8 @@ class Control(object):
             self.event_loop()
             self.clock.tick(10)
             self.update()
+
+
 
 def get_response(socket):
     #print "Get data"

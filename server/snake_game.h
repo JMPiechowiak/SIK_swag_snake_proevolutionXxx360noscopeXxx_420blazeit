@@ -22,6 +22,8 @@ void send_first_packet(int socket, const char *size1, const char *size2, Snake m
 
 void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple a);
 
+void send_last_packet(int socket, int event);
+
 void Game(int socket1, int socket2);
 
 #endif///////////////////////////

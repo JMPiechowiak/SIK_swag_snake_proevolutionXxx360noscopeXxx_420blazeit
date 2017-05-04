@@ -105,6 +105,25 @@ void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple
   free(packet);
 }
 
+void send_last_packet(int socket, int event)
+{
+  // [ packet_id | event id ]
+  // events:
+  // 0 - this snake is a winner
+  // 1 - this snake is a loser
+  // 2 - it is a draw
+  char *packet = malloc(10);
+  strcpy(packet, to_str(4));
+  strcat(packet, " ");
+  strcat(packet, to_str(event));
+  #ifndef DEBUG
+  send(socket, packet, strlen(packet), 0);
+  #else
+  printf("@send_first_packet: %s\n", packet);
+  #endif
+  free(packet);
+}
+
 void get_response(int socket, Snake *s)
 {
   char bufor;
@@ -113,10 +132,22 @@ void get_response(int socket, Snake *s)
     s->direction = bufor - '0';
   #endif
 }
+/*
+  TO DO
+  - ok rozszerzenie pakietu END o dodatkowy "bit"
+  - x zamkniecie operacji w osobnych watkach
+  - x odpowiedznie zastotowanie fork() do obslugi wielu klientow w jendym czasie
+  - x opakowanie wysylania pakietow w jedna funckcje
+  ------------ reszta nie jest konieczna -------------
+  - x obsluga naglego rozlaczenia klienta
+  - x dodanie trybu palzy i oczekiwania po rozlaczeniu
+  - x wczytywanie ustawien z pliku lub wpisywanie recznie
 
+*/
 void Game(int socket1, int socket2)
 {
   char bufor;
+  int run = 1;
   Snake *player_1 = snake_init(0, GRID_HEIGHT/2, 2);
   Snake *player_2 = snake_init(GRID_WIDTH-1, GRID_HEIGHT/2, 3);
   Apple apple = apple_init(GRID_WIDTH/2, GRID_HEIGHT/2);
@@ -131,22 +162,37 @@ void Game(int socket1, int socket2)
   send_packet(socket2, 2, *player_2, *player_1, apple);
   recv(socket2, &bufor, sizeof(char), 0);
 
-  send_packet(socket1, 4, *player_1, *player_2, apple);
-  send_packet(socket2, 4, *player_2, *player_1, apple);
-  // int run = 1;
-  // while(run)
-  // {
-  //   if(!player_1->alive || !player_2->alive)
-  //   {
-  //     run = 0;
-  //     send_packet(socket1, 4, *player_1, *player_2, apple);
-  //   }
-  //   else
-  //   {
-  //     send_packet(socket1, 3, *player_1, *player_2, apple);
-  //     get_response(socket1, player_1);
-  //     snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
-  //   }
-  // }
+  while(run)
+  {
+    if(!player_1->alive || !player_2->alive)
+    {
+      if(!player_1->alive && !player_2->alive)//both snakes are losers
+      {
+        send_last_packet(socket1, 2);
+        send_last_packet(socket2, 2);
+      }
+      else if(!player_1->alive)//snake #2 is a winner
+      {
+        send_last_packet(socket1, 0);
+        send_last_packet(socket2, 1);
+
+      }
+      else if(!player_2->alive)// snake #1 is a winner
+      {
+        send_last_packet(socket1, 1);
+        send_last_packet(socket2, 0);
+      }
+      run = 0;
+    }
+    else
+    {
+      send_packet(socket1, 3, *player_1, *player_2, apple);
+      send_packet(socket2, 3, *player_2, *player_1, apple);
+      get_response(socket1, player_1);
+      get_response(socket2, player_2);
+
+      snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+    }
+  }
 
 }
