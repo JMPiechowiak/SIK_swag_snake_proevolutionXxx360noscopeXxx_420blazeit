@@ -1,5 +1,7 @@
 #include "snake_game.h"
-//#define DEBUG TRUE
+#define DEBUG
+#define MULTITHREADING 0
+
 char* to_str(int num)
 {
   char *s = malloc(10);
@@ -119,7 +121,7 @@ void send_last_packet(int socket, int event)
   #ifndef DEBUG
   send(socket, packet, strlen(packet), 0);
   #else
-  printf("@send_first_packet: %s\n", packet);
+  printf("@send_last_packet: %s\n", packet);
   #endif
   free(packet);
 }
@@ -151,48 +153,54 @@ void Game(int socket1, int socket2)
   Snake *player_1 = snake_init(0, GRID_HEIGHT/2, 2);
   Snake *player_2 = snake_init(GRID_WIDTH-1, GRID_HEIGHT/2, 3);
   Apple apple = apple_init(GRID_WIDTH/2, GRID_HEIGHT/2);
-
-  send_first_packet(socket1,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_1, *player_2, apple);
-  send_first_packet(socket2,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_2, *player_1, apple);
-  recv(socket1, &bufor, sizeof(char), 0);
-  recv(socket2, &bufor, sizeof(char), 0);
-
-  send_packet(socket1, 2, *player_1, *player_2, apple);
-  recv(socket1, &bufor, sizeof(char), 0);
-  send_packet(socket2, 2, *player_2, *player_1, apple);
-  recv(socket2, &bufor, sizeof(char), 0);
-
-  while(run)
+  //if multithreading is off-------------------------------------------
+  if(!MULTITHREADING)
   {
-    if(!player_1->alive || !player_2->alive)
-    {
-      if(!player_1->alive && !player_2->alive)//both snakes are losers
-      {
-        send_last_packet(socket1, 2);
-        send_last_packet(socket2, 2);
-      }
-      else if(!player_1->alive)//snake #2 is a winner
-      {
-        send_last_packet(socket1, 0);
-        send_last_packet(socket2, 1);
+    send_first_packet(socket1,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_1, *player_2, apple);
+    send_first_packet(socket2,to_str(GRID_WIDTH), to_str(GRID_HEIGHT), *player_2, *player_1, apple);
+    recv(socket1, &bufor, sizeof(char), 0);
+    recv(socket2, &bufor, sizeof(char), 0);
 
-      }
-      else if(!player_2->alive)// snake #1 is a winner
-      {
-        send_last_packet(socket1, 1);
-        send_last_packet(socket2, 0);
-      }
-      run = 0;
-    }
-    else
-    {
-      send_packet(socket1, 3, *player_1, *player_2, apple);
-      send_packet(socket2, 3, *player_2, *player_1, apple);
-      get_response(socket1, player_1);
-      get_response(socket2, player_2);
+    send_packet(socket1, 2, *player_1, *player_2, apple);
+    recv(socket1, &bufor, sizeof(char), 0);
+    send_packet(socket2, 2, *player_2, *player_1, apple);
+    recv(socket2, &bufor, sizeof(char), 0);
 
-      snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+    while(run)
+    {
+      if(!player_1->alive || !player_2->alive)
+      {
+        if(!player_1->alive && !player_2->alive)//both snakes are losers
+        {
+          send_last_packet(socket1, 2);
+          send_last_packet(socket2, 2);
+        }
+        else if(!player_1->alive)//snake #2 is a winner
+        {
+          send_last_packet(socket1, 0);
+          send_last_packet(socket2, 1);
+        }
+        else if(!player_2->alive)// snake #1 is a winner
+        {
+          send_last_packet(socket1, 1);
+          send_last_packet(socket2, 0);
+        }
+        run = 0;
+      }
+      else
+      {
+        send_packet(socket1, 3, *player_1, *player_2, apple);
+        send_packet(socket2, 3, *player_2, *player_1, apple);
+        get_response(socket1, player_1);
+        get_response(socket2, player_2);
+
+        snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+      }
     }
   }
+  //if multithreading is on---------------------------------------------
+  else
+  {
 
+  }
 }

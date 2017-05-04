@@ -1,6 +1,6 @@
 #include "snake_game.h"
 #define MAX_GAMES 10
-//#define DEBUG TRUE
+#define DEBUG 
 int main(void) {
 
  unsigned int port;
