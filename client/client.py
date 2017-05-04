@@ -50,6 +50,7 @@ class Control(object):
 
         if self.state == "2":
             #READY?
+            #tutaj czekamy na wcisniecie spacji
             self.socket.send("2")
 
         elif self.state == "3":
@@ -59,6 +60,8 @@ class Control(object):
 
         elif self.state == "4":
             #END OF THE GAME, CHECK IF YOU ARE THE WINNER!
+            # tutaj gra nie powinna tylko wypisywac i zamykac okno, tylko
+            #wypisac na ekran wynik gry i poczekac na wcisniecie klawisza
             if data[1] == "0":
                 print "WINNER"
             elif data[1] == "1":
@@ -81,6 +84,7 @@ class Control(object):
         # segments = self.my_segments + self.enemy_segments
         for s in self.my_segments:
             pygame.draw.rect(self.screen, [1,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
+            
         for s in self.enemy_segments:
             pygame.draw.rect(self.screen, [155,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
         #draw apple if it is possible

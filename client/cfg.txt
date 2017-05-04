@@ -1,5 +1,5 @@
 #HOST
-pc15m
+localhost
 
 #PORT
 12345
