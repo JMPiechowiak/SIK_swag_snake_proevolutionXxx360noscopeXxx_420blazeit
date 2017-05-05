@@ -1,5 +1,5 @@
 #include "snake_game.h"
-#define DEBUG
+//#define DEBUG
 #define MULTITHREADING 0
 
 char* to_str(int num)

@@ -1,10 +1,10 @@
 #include "snake_game.h"
 #define MAX_GAMES 10
-#define DEBUG 
+//#define DEBUG
 int main(void) {
 
  unsigned int port;
- int main_socket, player1_soc, player2_soc, games;
+ int main_socket, player1_soc, player2_soc, games, pid;
  struct sockaddr_in adr, nadawca_1, nadawca_2;
  socklen_t dl = sizeof(struct sockaddr_in);
 
@@ -27,33 +27,39 @@ int main(void) {
 
  printf("Czekam na polaczenie ...\n");
  games = 0;
- int pid;
- if((player1_soc = accept(main_socket,
+ while((player1_soc = accept(main_socket,
    (struct sockaddr*) &nadawca_1,
    &dl)) > 0)
  {
    games++;
-   if(1)
+   if(games < MAX_GAMES)
    {
-     if(games < MAX_GAMES)
-     {
-       printf("New game created. Connected Player #1: %s\n Waiting for Player #2...\n", inet_ntoa(nadawca_1.sin_addr));
-       player2_soc = accept(main_socket,(struct sockaddr*) &nadawca_2,&dl);
-       printf("Connected Player #2: %s\n", inet_ntoa(nadawca_2.sin_addr));
-       Game(player1_soc, player2_soc);
-       printf("Close game\n");
-       close(player1_soc);
-       close(player2_soc);
-     }
-     else
-     {
-       printf("to many connections, disconnecting %s\n",inet_ntoa(nadawca_1.sin_addr));
-       close(player1_soc);
-     }
+    printf("#%d game created. Connected Player #1: %s\n Waiting for Player #2...\n", games, inet_ntoa(nadawca_1.sin_addr));
+    player2_soc = accept(main_socket,(struct sockaddr*) &nadawca_2,&dl);
+    printf("Connected Player #2: %s\n", inet_ntoa(nadawca_2.sin_addr));
+    if(pid = fork() == 0)
+    {
+      printf("child program start game...\n");
+      Game(player1_soc, player2_soc);
+      printf("Close game\n");
+      close(player1_soc);
+      close(player2_soc);
+      break;
+    }
+    else
+    {
+      printf("main program continue...\n");
+      continue;
+    }
+   }
+   else
+   {
+     printf("to many connections, disconnecting %s\n",inet_ntoa(nadawca_1.sin_addr));
+     close(player1_soc);
    }
    games--;
  }
- close(main_socket);
+ if(pid) close(main_socket);
 #else
   Game(-1, -1);
 #endif
