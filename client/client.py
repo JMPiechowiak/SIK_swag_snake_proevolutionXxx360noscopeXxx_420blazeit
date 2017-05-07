@@ -43,15 +43,25 @@ class Control(object):
             if self.keys[pygame.K_LEFT] and self.direction != '2':
                 self.direction = '3'
 
+	def waitAnyKey():
+		while True:
+			for event in pygame.event.get():
+				if event.type == KEYDOWN
+					return
+	
     def update(self):
         data = get_response(self.socket)
         print data
         self.state = data[0]
 
         if self.state == "2":
-            #READY?
-            #tutaj czekamy na wcisniecie spacji
-            self.socket.send("2")
+		    #READY?
+			print "Press SPACE to start"
+			while True:
+				for event in pygame.event.get():
+					if event.type == KEYDOWN and event.key == pygame.K_SPACE:
+						self.socket.send("2")
+						return
 
         elif self.state == "3":
             #GAME IS RUNING!
@@ -63,11 +73,14 @@ class Control(object):
             # tutaj gra nie powinna tylko wypisywac i zamykac okno, tylko
             #wypisac na ekran wynik gry i poczekac na wcisniecie klawisza
             if data[1] == "0":
-                print "WINNER"
+				waitAnyKey()
+                print "YOU WON"
             elif data[1] == "1":
-                print "LOSER"
+				waitAnyKey()
+                print "YOU LOSE"
             elif data[1] == "2":
-                print "DRAW"
+				waitAnyKey()
+                print "IT'S A DRAW"
             self.done = True;
 
     def snakes_update(self, data):
