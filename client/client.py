@@ -28,6 +28,8 @@ class Control(object):
         self.my_segments = [[int(data[3]),int(data[4])]]
         self.apple = [int(data[8]),int(data[9])]
         self.enemy_segments = [[int(data[6]),int(data[7])]]
+        self.resolution = [x, y]
+        self.ready = False
 
     def event_loop(self):
         for event in pygame.event.get():
@@ -43,6 +45,12 @@ class Control(object):
             if self.keys[pygame.K_LEFT] and self.direction != '2':
                 self.direction = '3'
 
+    def inputText(self, str, x, y, r, g, b):
+        myfont = pygame.font.SysFont("monospace", 32)
+        label = myfont.render(str, 1, (r, g, b))
+        self.screen.blit(label, (x/2 - label.get_rect().width/2 , y/2 - label.get_rect().height/2))
+        pygame.display.flip()
+
     def waitAnyKey(self):
         while True:
             for event in pygame.event.get():
@@ -51,17 +59,18 @@ class Control(object):
 
     def update(self):
         data = get_response(self.socket)
-        print data
         self.state = data[0]
 
         if self.state == "2":
 		    #READY?
-			print "Press SPACE to start"
-			while True:
-				for event in pygame.event.get():
-					if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-						self.socket.send("2")
-						return
+            self.screen.fill((0, 0, 0))
+            self.inputText("Press SPACE to start", self.resolution[0], self.resolution[1], 255, 255, 255)
+            while True:
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        self.socket.send("2")
+                        self.ready = True
+                        return
 
         elif self.state == "3":
             #GAME IS RUNING!
@@ -73,14 +82,17 @@ class Control(object):
             # tutaj gra nie powinna tylko wypisywac i zamykac okno, tylko
             #wypisac na ekran wynik gry i poczekac na wcisniecie klawisza
             if data[1] == "0":
+                self.screen.fill((0, 0, 0))
+                self.inputText("YOU WON", self.resolution[0], self.resolution[1], 0, 255, 0)
                 self.waitAnyKey()
-                print "YOU WON"
             elif data[1] == "1":
+                self.screen.fill((0, 0, 0))
+                self.inputText("YOU LOSE", self.resolution[0], self.resolution[1], 255, 0, 0)
                 self.waitAnyKey()
-                print "YOU LOSE"
             elif data[1] == "2":
+                self.screen.fill((0, 0, 0))
+                self.inputText("IT'S A DRAW", self.resolution[0], self.resolution[1], 255, 255, 0)
                 self.waitAnyKey()
-                print "IT'S A DRAW"
             self.done = True;
 
     def snakes_update(self, data):
@@ -94,7 +106,7 @@ class Control(object):
 
     def draw_segments(self):
         #draw all segments
-        # segments = self.my_segments + self.enemy_segments
+        # segments = self.x, ymy_segments + self.enemy_segments
         for s in self.my_segments:
             pygame.draw.rect(self.screen, [1,155,64], (s[0]*self.segment_width,s[1]*self.segment_height,self.segment_width, self.segment_height),0)
 
@@ -105,9 +117,12 @@ class Control(object):
             pygame.draw.rect(self.screen, [255,0,2], (self.apple[0]*self.segment_width,self.apple[1]*self.segment_height,self.segment_width, self.segment_height),0)
 
     def draw(self):
-        self.screen.fill([4,10,100])
-        self.draw_segments()
-        pygame.display.flip()
+        if self.ready:
+            self.screen.fill([4,10,100])
+            self.draw_segments()
+            pygame.display.flip()
+        else:
+            self.screen.fill((0, 0, 0))
 
     def display_fps(self):
         caption = "{} - FPS: {:.2f}".format(CAPTION, self.clock.get_fps())
