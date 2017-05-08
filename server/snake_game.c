@@ -161,6 +161,7 @@ void Game(int socket1, int socket2)
     recv(socket1, &bufor, sizeof(char), 0);
     recv(socket2, &bufor, sizeof(char), 0);
 
+    sleep(5);
     send_packet(socket1, 2, *player_1, *player_2, apple);
     recv(socket1, &bufor, sizeof(char), 0);
     send_packet(socket2, 2, *player_2, *player_1, apple);
