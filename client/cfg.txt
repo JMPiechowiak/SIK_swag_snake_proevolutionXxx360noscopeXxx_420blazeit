@@ -1,5 +1,5 @@
 #HOST
-pc23g
+localhost
 
 #PORT
 12345

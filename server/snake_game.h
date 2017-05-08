@@ -10,20 +10,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "snake.h"
+#include "packets.h"
+#include "multithread_module.h"
 
 #define GRID_WIDTH 80
 #define GRID_HEIGHT 80
 
-char* to_str(int num);
-
-char* concat(const char *s1, const char *s2);
-
-void send_first_packet(int socket, const char *size1, const char *size2, Snake my_snake, Snake enemy_snake, Apple apple);
-
-void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple a);
-
-void send_last_packet(int socket, int event);
-
+//init and main loop for each child process
 void Game(int socket1, int socket2);
 
 #endif///////////////////////////

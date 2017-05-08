@@ -1,6 +1,7 @@
 #include "snake_game.h"
 #define MAX_GAMES 10
 //#define DEBUG
+#define MULTITHREADING 1
 int main(void) {
 
  unsigned int port;
@@ -46,11 +47,7 @@ int main(void) {
       close(player2_soc);
       break;
     }
-    else
-    {
-      printf("main program continue...\n");
-      continue;
-    }
+    else continue;//main program
    }
    else
    {
@@ -60,6 +57,8 @@ int main(void) {
    games--;
  }
  if(pid) close(main_socket);
+ if(MULTITHREADING) pthread_exit(NULL);
+ //debug mode
 #else
   Game(-1, -1);
 #endif

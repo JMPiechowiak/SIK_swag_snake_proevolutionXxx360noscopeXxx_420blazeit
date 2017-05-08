@@ -103,8 +103,14 @@ void snake_collisions(Snake *s1, Snake *s2, int width, int height, Apple *a)
     s1->alive = 0;
     return;
   }
+
+  //
   //check colliosn snakes head to enemy snake body
-  if(point_in_snake(s1->head->x, s1->head->y, *s2)) s1->alive = 0;
+  if(point_in_snake(s1->head->x, s1->head->y, *s2))
+  {
+    s1->alive = 0;
+    return;
+  }
 
   //check if snake ate apple
   if(s1->head->x == a->x && s1->head->y == a->y && !a->taken)

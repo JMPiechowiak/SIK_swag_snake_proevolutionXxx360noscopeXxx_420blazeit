@@ -1,150 +1,16 @@
 #include "snake_game.h"
 //#define DEBUG
-#define MULTITHREADING 0
+#define MULTITHREADING 1
 
-char* to_str(int num)
-{
-  char *s = malloc(10);
-  sprintf(s,"%d",num);
-  return s;
-}
-
-char* concat(const char *s1, const char *s2)
-{
-    char *result = malloc(strlen(s1)+strlen(s2)+2);//+1 for the zero-terminator, +1 for separator
-    strcpy(result, s1);
-    strcat(result, " ");
-    strcat(result, s2);
-    return result;
-}
-
-/*Packet by ID:
-1 - INIT
-2 - READY
-3 - RUN
-4 - END
-*/
-
-void send_first_packet(int socket, const char *size1, const char *size2, Snake my_snake, Snake enemy_snake, Apple apple)
-{
-  // [ packet_id | grid width | grid hegight | start x | start y | starct dir ..
-  //   ...| enemy x | enemy y | apple x | apple y ] */
-  char *packet = malloc(512);
-  strcpy(packet, to_str(1));
-  strcat(packet, " ");
-  strcat(packet, size1);
-  strcat(packet, " ");
-  strcat(packet, size2);
-  strcat(packet, " ");
-  strcat(packet, to_str(my_snake.head->x));
-  strcat(packet, " ");
-  strcat(packet, to_str(my_snake.head->y));
-  strcat(packet, " ");
-  strcat(packet, to_str(my_snake.direction));
-  strcat(packet, " ");
-  strcat(packet, to_str(enemy_snake.head->x));
-  strcat(packet, " ");
-  strcat(packet, to_str(enemy_snake.head->y));
-  strcat(packet, " ");
-  strcat(packet, to_str(apple.x));
-  strcat(packet, " ");
-  strcat(packet, to_str(apple.y));
-  #ifndef DEBUG
-  send(socket, packet, strlen(packet), 0);
-  #else
-  printf("@send_first_packet: %s\n", packet);
-  #endif
-  free(packet);
-}
-
-void send_packet(int socket, int status, Snake player_rec, Snake player_2, Apple a)
-{
-  char bufor[16];
-  short need_response = 0;
-  char *packet = malloc(1024);
-  switch(status){
-    case 2:
-    // [ packet id ]
-      strcpy(packet, to_str(2));
-      break;
-    case 3:
-    // [ packet id | ate apple? | player new x | player new y ...
-    //  ... | enemy ate apple? | enemy new x | enemy new y ...
-    //  ... | apple x | apple y ]
-      strcpy(packet, to_str(3));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_rec.ate_apple));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_rec.head->x));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_rec.head->y));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_2.ate_apple));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_2.head->x));
-      strcat(packet, " ");
-      strcat(packet, to_str(player_2.head->y));
-      strcat(packet, " ");
-      strcat(packet, to_str(a.x));
-      strcat(packet, " ");
-      strcat(packet, to_str(a.y));
-      break;
-    case 4:
-    // [ packet id ]
-      strcpy(packet, to_str(4));
-      break;
-    default:
-      strcpy(packet, to_str(-1));
-      printf("error: unknown status!");
-      exit(-1);
-  }
-
-  #ifndef DEBUG
-  send(socket, packet, strlen(packet), 0);
-  #else
-  printf("@send_packet: %s\n", packet);
-  #endif
-  free(packet);
-}
-
-void send_last_packet(int socket, int event)
-{
-  // [ packet_id | event id ]
-  // events:
-  // 0 - this snake is a winner
-  // 1 - this snake is a loser
-  // 2 - it is a draw
-  char *packet = malloc(10);
-  strcpy(packet, to_str(4));
-  strcat(packet, " ");
-  strcat(packet, to_str(event));
-  #ifndef DEBUG
-  send(socket, packet, strlen(packet), 0);
-  #else
-  printf("@send_last_packet: %s\n", packet);
-  #endif
-  free(packet);
-}
-
-void get_response(int socket, Snake *s)
-{
-  char bufor;
-  #ifndef DEBUG
-    recv(socket, &bufor, sizeof(char), 0);
-    s->direction = bufor - '0';
-  #endif
-}
 /*
   TO DO
   - ok rozszerzenie pakietu END o dodatkowy "bit"
-  - x zamkniecie operacji w osobnych watkach
-  - x odpowiedznie zastotowanie fork() do obslugi wielu klientow w jendym czasie
+  - ok zamkniecie operacji w osobnych watkach
+  - ok odpowiedznie zastotowanie fork() do obslugi wielu klientow w jendym czasie
   - x opakowanie wysylania pakietow w jedna funckcje
   ------------ reszta nie jest konieczna -------------
   - x obsluga naglego rozlaczenia klienta
-  - x dodanie trybu palzy i oczekiwania po rozlaczeniu
   - x wczytywanie ustawien z pliku lub wpisywanie recznie
-
 */
 void Game(int socket1, int socket2)
 {
@@ -161,7 +27,6 @@ void Game(int socket1, int socket2)
     recv(socket1, &bufor, sizeof(char), 0);
     recv(socket2, &bufor, sizeof(char), 0);
 
-    sleep(5);
     send_packet(socket1, 2, *player_1, *player_2, apple);
     recv(socket1, &bufor, sizeof(char), 0);
     send_packet(socket2, 2, *player_2, *player_1, apple);
@@ -171,21 +36,12 @@ void Game(int socket1, int socket2)
     {
       if(!player_1->alive || !player_2->alive)
       {
-        if(!player_1->alive && !player_2->alive)//both snakes are losers
-        {
-          send_last_packet(socket1, 2);
-          send_last_packet(socket2, 2);
-        }
-        else if(!player_1->alive)//snake #2 is a winner
-        {
-          send_last_packet(socket1, 0);
-          send_last_packet(socket2, 1);
-        }
-        else if(!player_2->alive)// snake #1 is a winner
-        {
-          send_last_packet(socket1, 1);
-          send_last_packet(socket2, 0);
-        }
+        int status_1, status_2;
+        if(!player_1->alive && !player_2->alive) status_1 = status_2 = 2;//both snakes are losers
+        else if(!player_1->alive){status_1 = 1; status_2 = 0;}//snake #2 is a winner
+        else if(!player_2->alive){status_1 = 0; status_2 = 1;}// snake #1 is a winner
+        send_last_packet(socket1, status_1);
+        send_last_packet(socket2, status_2);
         run = 0;
       }
       else
@@ -202,6 +58,91 @@ void Game(int socket1, int socket2)
   //if multithreading is on---------------------------------------------
   else
   {
+    pthread_t thread_p1, thread_p2;
+    pthread_attr_t attr;
+    int t1, t2;
+    void *status;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+    init_data* init_p1 = new_init_data(socket1, GRID_WIDTH, GRID_HEIGHT, player_1, player_2, &apple);
+    init_data* init_p2 = new_init_data(socket2, GRID_WIDTH, GRID_HEIGHT, player_2, player_1, &apple);
+
+    //send first config;
+    printf("Send first config\n");
+    t1 = pthread_create(&thread_p1, &attr, Send_packet_and_ready, (void *)  init_p1);
+    if(t1)
+    {
+    printf("ERROR: can not create init-send threat\n");
+    exit(-1);
+    }
+    t2 = pthread_create(&thread_p2, &attr, Send_packet_and_ready, (void *)  init_p2);
+    if(t2)
+    {
+      printf("ERROR: can not create threat number %d, error code %d\n", 2, t2);
+      exit(-1);
+    }
+
+    t1 = pthread_join(thread_p1, &status);
+    if(t1)
+    {
+        printf("ERROR: can join threat number %d, error code %d\n", 1, t1);
+        exit(-1);
+    }
+    t1 = pthread_join(thread_p2, &status);
+    if(t2)
+    {
+      printf("ERROR: can join threat number %d, error code %d\n", 2, t2);
+      exit(-1);
+    }
+    printf("Threads joined succesfully!\n");
+    //run
+    while(run)
+    {
+      if(!player_1->alive || !player_2->alive)
+      {
+        int status_1, status_2;
+        if(!player_1->alive && !player_2->alive) status_1 = status_2 = 2;//both snakes are losers
+        else if(!player_1->alive){status_1 = 1; status_2 = 0;}//snake #2 is a winner
+        else if(!player_2->alive){status_1 = 0; status_2 = 1;}// snake #1 is a winner
+        send_last_packet(socket1, status_1);
+        send_last_packet(socket2, status_2);
+        run = 0;
+      }
+      else
+      {
+        run_data* run_data_p1  = new_run_data(socket1, player_1, player_2, &apple);
+        run_data* run_data_p2  = new_run_data(socket2, player_2, player_1, &apple);
+        t1 = pthread_create(&thread_p1, &attr, Send_run_packet, (void *)  run_data_p1 );
+        if(t1)
+        {
+        printf("ERROR: can not create init-send threat\n");
+        exit(-1);
+        }
+        t2 = pthread_create(&thread_p2, &attr, Send_run_packet, (void *)  run_data_p2);
+        if(t2)
+        {
+          printf("ERROR: can not create threat number %d, error code %d\n", 2, t2);
+          exit(-1);
+        }
+
+        t1 = pthread_join(thread_p1, &status);
+        if(t1)
+        {
+            printf("ERROR: can join threat number %d, error code %d\n", 1, t1);
+            exit(-1);
+        }
+        t2 = pthread_join(thread_p2, &status);
+        if(t2)
+        {
+          printf("ERROR: can join threat number %d, error code %d\n", 2, t2);
+          exit(-1);
+        }
+        snakes_update(player_1, player_2, GRID_WIDTH, GRID_HEIGHT, &apple);
+      }
+
+    }
+    pthread_attr_destroy(&attr);
   }
+  //--------------------------------------------
 }
